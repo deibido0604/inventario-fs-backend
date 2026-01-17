@@ -1,0 +1,31 @@
+{
+  "name": "inventario_fs_backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.0",
+    "dotenv": "^16.0.3",
+    "express-jwt": "^8.4.1",
+    "jwks-rsa": "^3.1.0",
+    "jwt-decode": "^4.0.0",
+    "express-validator": "^7.0.1",
+    "moment-timezone": "^0.5.43",
+    "morgan": "^1.10.0",
+    "nocache": "^3.0.4",
+    "express-bearer-token": "^2.4.0",
+    "express-mung": "^0.5.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-fileupload": "^1.4.0",
+    "connect-timeout": "^1.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
