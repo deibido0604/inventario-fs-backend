@@ -4,8 +4,9 @@ var jwtDecode = require('jwt-decode');
 const { check, validationResult } = require('express-validator');
 const Response = require('../components/response');
 
-// Importar SOLO productValidation (las otras no existen por ahora)
-const { productValidation } = require('./body_validations/productValidation');
+const {
+  productValidation
+} = require('./body_validations/productValidation');
 
 // Como solo tenemos productValidation, no necesitamos importar los demás
 const validators = {
@@ -14,36 +15,18 @@ const validators = {
     check('password', 'password does not exist.').exists(),
   ],
   ...productValidation
-  // Los demás se agregarán cuando existan
 };
 
 function middlewareRules() {
-  // Para desarrollo: JWT simplificado
+  // Si estamos en desarrollo o no hay JWSKURI configurado, usar JWT simple
   const jwtObject = (req, res, next) => {
-    try {
-      // Opción 1: Si usas Auth0 (completo)
-      if (process.env.JWSKURI && process.env.JWSKURI !== '') {
-        const auth0Check = jwt({
-          secret: jwks.expressJwtSecret({
-            cache: true,
-            rateLimit: true,
-            jwksRequestsPerMinute: 5,
-            jwksUri: process.env.JWSKURI,
-          }),
-          aud: process.env.AUD,
-          issuer: process.env.ISSUER,
-          algorithms: ['RS256'],
-        });
-        return auth0Check(req, res, next);
-      }
-      
-      // Opción 2: JWT simple para desarrollo
+    // Si es desarrollo o no hay JWSKURI, usar JWT simple
+    if (process.env.NODE_ENV === 'development' || !process.env.JWSKURI) {
       const authHeader = req.headers.authorization || req.headers['compi-auth'];
       
       if (!authHeader) {
-        // Permitir continuar en desarrollo sin token
-        console.log('⚠️  Desarrollo: No se proporcionó token, continuando...');
-        req.user = { email: 'dev@localhost' };
+        // En desarrollo, crear un usuario dummy
+        req.user = { email: 'dev@localhost', username: 'dev_user' };
         req.headers['console-user'] = 'dev@localhost';
         return next();
       }
@@ -52,31 +35,37 @@ function middlewareRules() {
         ? authHeader.substring(7) 
         : authHeader;
 
-      // Verificar con JWT simple
-      const decoded = jwtDecode(token);
-      req.user = decoded;
-      
-      if (decoded.email) {
-        req.headers['console-user'] = decoded.email;
+      try {
+        // Decodificar sin verificar (para desarrollo)
+        const decoded = jwtDecode(token);
+        req.user = decoded;
+        req.headers['console-user'] = decoded.email || decoded.username || 'dev_user';
+      } catch (error) {
+        console.error('JWT decode error:', error.message);
+        // En desarrollo, continuar con usuario dummy
+        req.user = { email: 'dev@localhost', username: 'dev_user' };
+        req.headers['console-user'] = 'dev@localhost';
       }
-      
-      next();
-    } catch (error) {
-      console.error('❌ JWT Error:', error.message);
-      // En desarrollo, permitimos continuar
-      console.log('⚠️  Desarrollo: Continuando sin autenticación...');
-      req.user = { email: 'dev@localhost' };
-      next();
+      return next();
     }
+    
+    // En producción con Auth0
+    return jwt({
+      secret: jwks.expressJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: process.env.JWSKURI,
+      }),
+      aud: process.env.AUD,
+      issuer: process.env.ISSUER,
+      algorithms: ['RS256'],
+    })(req, res, next);
   };
 
   function authenticateUser(req, res, next) {
-    // En desarrollo, siempre permitir
+    // Si es desarrollo, no verificar
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔓 Desarrollo: Autenticación bypass');
-      if (!req.headers['console-user']) {
-        req.headers['console-user'] = 'dev@localhost';
-      }
       return next();
     }
     
