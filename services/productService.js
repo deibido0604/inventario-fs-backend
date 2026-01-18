@@ -60,7 +60,6 @@ function productService() {
 
       const data = await product.save();
 
-      // Logueo
       await logsConstructor(
         constants.LOG_TYPE.CREATE_PRODUCT,
         data,

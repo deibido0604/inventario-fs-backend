@@ -20,7 +20,6 @@ const {
 
 var systemUserRouter = express.Router();
 
-// Rutas públicas
 systemUserRouter.post(
   "/login",
   [
@@ -30,7 +29,6 @@ systemUserRouter.post(
   loginSystemUser
 );
 
-// Rutas protegidas
 systemUserRouter.get("/list", jwtObject, getAllSystemUsers);
 systemUserRouter.get("/:id", jwtObject, getSystemUserById);
 systemUserRouter.post(

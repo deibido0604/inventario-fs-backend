@@ -15,7 +15,6 @@ const productValidation = {
         check('quantity', 'quantity does not exist.').optional(),
         check('active', 'active does not exist.').optional(),
     ],
-    // Mantenemos las otras validaciones por si las necesitas después
     'create:productClassification' : [
         check('type', 'type does not exist.').not().isEmpty(),
         check('name', 'name does not exist.').not().isEmpty(),

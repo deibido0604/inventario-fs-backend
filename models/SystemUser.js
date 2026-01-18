@@ -66,7 +66,6 @@ const options = {
 
 const SystemUserSchema = new Schema(schema, options);
 
-// Índices para mejorar performance
 SystemUserSchema.index({ username: 1 }, { unique: true });
 SystemUserSchema.index({ email: 1 }, { unique: true });
 SystemUserSchema.index({ active: 1 });

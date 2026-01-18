@@ -2,11 +2,9 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// Ruta para obtener token de prueba
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
   
-  // En desarrollo, aceptar cualquier credencial
   if (process.env.NODE_ENV === 'development' || !process.env.JWSKURI) {
     const token = jwt.sign(
       {
@@ -30,14 +28,12 @@ router.post('/login', (req, res) => {
     });
   }
   
-  // En producción, validar credenciales reales
   res.status(401).json({
     success: false,
     message: 'Autenticación no configurada para producción'
   });
 });
 
-// Ruta para verificar token
 router.get('/verify', (req, res) => {
   const authHeader = req.headers.authorization;
   

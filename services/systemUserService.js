@@ -96,7 +96,6 @@ function systemUserService() {
 
   async function createSystemUser(param, req) {
     try {
-      // Verificar si el usuario ya existe
       const existingUser = await models.SystemUser.findOne({
         $or: [
           { username: param.username.toLowerCase() },
@@ -108,7 +107,6 @@ function systemUserService() {
         return buildError(400, "El usuario o email ya está registrado!");
       }
 
-      // Hash de la contraseña
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(param.password, salt);
 
@@ -143,7 +141,6 @@ function systemUserService() {
         );
       }
 
-      // Ocultar password en la respuesta
       const userResponse = data.toObject();
       delete userResponse.password;
 
@@ -167,7 +164,6 @@ function systemUserService() {
       if (param.roles) updateData.roles = param.roles;
       if (param.active !== undefined) updateData.active = param.active;
 
-      // Si se actualiza la contraseña
       if (param.password) {
         const salt = await bcrypt.genSalt(10);
         updateData.password = await bcrypt.hash(param.password, salt);
@@ -183,7 +179,6 @@ function systemUserService() {
           _id: param.id,
           ...updateData,
         };
-        // Eliminar password del log por seguridad
         if (extractedData.password) delete extractedData.password;
 
         await logsConstructor(
@@ -210,7 +205,6 @@ function systemUserService() {
         return buildError(404, "Usuario no encontrado!");
       }
 
-      // No permitir eliminar el usuario admin principal
       if (user.username === "admin") {
         return buildError(
           400,
@@ -242,10 +236,8 @@ function systemUserService() {
     }
   }
 
-  // Login de usuario
   async function loginSystemUser(username, password, req) {
     try {
-      // Buscar usuario por username o email
       const user = await models.SystemUser.findOne({
         $or: [
           { username: username.toLowerCase() },
@@ -262,25 +254,20 @@ function systemUserService() {
         return buildError(401, "Credenciales incorrectas!");
       }
 
-      // Verificar si el usuario está activo
       if (!user.active) {
         return buildError(403, "Usuario desactivado!");
       }
 
-      // Verificar contraseña
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return buildError(401, "Credenciales incorrectas!");
       }
 
-      // Actualizar último login
       user.lastLogin = new Date();
       await user.save();
 
-      // ========== AGREGAR ESTO: GENERAR TOKEN JWT ==========
       const jwt = require("jsonwebtoken");
 
-      // Payload del token
       const tokenPayload = {
         userId: user._id.toString(),
         username: user.username,
@@ -294,7 +281,6 @@ function systemUserService() {
         permissions: [],
       };
 
-      // Extraer permisos del usuario
       user.roles.forEach((role) => {
         if (role.permissions) {
           role.permissions.forEach((perm) => {
@@ -307,39 +293,31 @@ function systemUserService() {
         }
       });
 
-      // Generar token JWT
       const token = jwt.sign(
         tokenPayload,
         process.env.JWT_SECRET || "clave_secreta_para_produccion_2024",
         { expiresIn: process.env.JWT_EXPIRES_IN || "24h" },
       );
 
-      // ========== FIN DE AGREGAR TOKEN ==========
-
       const userResponse = user.toObject();
       delete userResponse.password;
 
-      // Log de login
       await logsConstructor(
         constants.LOG_TYPE.USER_LOGIN,
         { _id: user._id, username: user.username },
         "Inicio de sesión exitoso",
         user.username,
       );
-
-      // ========== ACTUALIZAR RESPUESTA ==========
       return {
-        ...userResponse, // Mantener datos del usuario
-        token, // Agregar el token JWT
+        ...userResponse,
+        token,
         expiresIn: process.env.JWT_EXPIRES_IN || "24h",
       };
-      // ========== FIN ACTUALIZAR RESPUESTA ==========
     } catch (e) {
       return buildError(500, e.message);
     }
   }
 
-  // Logout de usuario
   async function logoutSystemUser(userId, req) {
     try {
       const user = await models.SystemUser.findById(
@@ -350,7 +328,6 @@ function systemUserService() {
         return buildError(404, "Usuario no encontrado!");
       }
 
-      // Log de logout
       await logsConstructor(
         constants.LOG_TYPE.USER_LOGOUT,
         { _id: user._id, username: user.username },

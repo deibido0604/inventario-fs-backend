@@ -9,7 +9,6 @@ const {
   systemUserValidation,
 } = require("./body_validations/systemUserValidation");
 
-// Como solo tenemos productValidation, no necesitamos importar los demás
 const validators = {
   login: [
     check("username", "username does not exist.").exists(),
@@ -20,11 +19,9 @@ const validators = {
 };
 
 function middlewareRules() {
-  // Si estamos en desarrollo o no hay JWSKURI configurado, usar JWT simple
   const jwtObject = (req, res, next) => {
-    // Si no hay JWSKURI configurado, usar JWT simple
     if (!process.env.JWSKURI || process.env.JWSKURI === "") {
-      const authHeader = req.headers.authorization || req.headers["compi-auth"];
+      const authHeader = req.headers.authorization || req.headers["inventario-fs"];
 
       if (!authHeader) {
         return res.status(401).json({
@@ -42,7 +39,7 @@ function middlewareRules() {
         const jwt = require("jsonwebtoken");
         const decoded = jwt.verify(
           token,
-          process.env.JWT_SECRET || "clave_secreta_para_produccion_2024",
+          process.env.JWT_SECRET || "inventario-fs",
         );
         req.user = decoded;
         req.headers["console-user"] = decoded.email || decoded.username;
@@ -55,7 +52,6 @@ function middlewareRules() {
         });
       }
     } else {
-      // Usar Auth0 si está configurado
       return jwt({
         secret: jwks.expressJwtSecret({
           cache: true,
@@ -71,7 +67,6 @@ function middlewareRules() {
   };
 
   function authenticateUser(req, res, next) {
-    // Si es desarrollo, no verificar
     if (process.env.NODE_ENV === "development") {
       return next();
     }

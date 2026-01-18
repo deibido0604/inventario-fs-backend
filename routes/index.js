@@ -12,7 +12,6 @@ const removeExtension = (fileName) => {
 
 console.log('==========RUTAS DISPONIBLES==========');
 
-// Leer todos los archivos .js excepto index.js
 const files = fs.readdirSync(__dirname).filter(file => {
     return file !== 'index.js' && file.endsWith('.js');
 });
@@ -21,10 +20,8 @@ files.forEach(file => {
     const { filename, route } = removeExtension(file);
     
     try {
-        // Cargar el archivo de ruta
         const routeModule = require(`./${filename}`);
         
-        // Montar la ruta
         router.use(`/${route}`, routeModule);
         console.log(`✅ /${route}`);
     } catch (error) {
@@ -33,8 +30,5 @@ files.forEach(file => {
 });
 
 console.log('====================================');
-
-// NO USES router.get('*', ...) - eso causa el error
-// En su lugar, deja que app.js maneje el 404
 
 module.exports = router;
