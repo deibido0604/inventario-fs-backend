@@ -143,8 +143,8 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// Cargar rutas - CAMBIO AQUÍ: usar /inventario-fs en lugar de /api-back-office
-app.use('/inventario-fs', require('./routes/index'));
+// CAMBIO: usar /api-inventario-fs para producción
+app.use('/api-inventario-fs', require('./routes/index'));
 
 // Ruta de salud
 app.get('/health', (req, res) => {
@@ -164,7 +164,7 @@ app.get('/', (req, res) => {
         status: 'Inventario FS API Service',
         documentation: '/api-docs',
         health: '/health',
-        basePath: '/inventario-fs'
+        basePath: '/api-inventario-fs'  // Actualizado
     });
 });
 
