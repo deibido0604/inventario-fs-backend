@@ -1,16 +1,22 @@
 require('dotenv').config();
 
-const app = require("./app.js");
-const { connectDB } = require("./config/MDBConnection.js");
+const app = require('./app.js');
+const { connectDB } = require('./config/MDBConnection.js');
+
+const PORT = process.env.PORT || 3000;
 
 const iniciarServidor = async () => {
   try {
     await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    });
   } catch (error) {
-    console.error("❌ Error al iniciar el servidor:", error.message);
-    
+
     if (process.env.NODE_ENV === 'production') {
-      console.log("🔄 Continuando sin conexión a DB...");
+      app.listen(PORT, () => {
+        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+      });
     } else {
       process.exit(1);
     }
@@ -18,5 +24,3 @@ const iniciarServidor = async () => {
 };
 
 iniciarServidor();
-
-module.exports = app;
