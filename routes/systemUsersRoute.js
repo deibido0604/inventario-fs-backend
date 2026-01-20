@@ -22,10 +22,6 @@ var systemUserRouter = express.Router();
 
 systemUserRouter.post(
   "/login",
-  [
-    getValidation("login:user"),
-    validate,
-  ],
   loginSystemUser
 );
 
