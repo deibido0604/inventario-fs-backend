@@ -66,54 +66,53 @@ app.use(haltOnTimedout);
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
+// MIDDLEWARE MODIFICADO: Verificación de token deshabilitada para TODOS los entornos
 app.use(async (req, res, next) => {
     const publicRoutes = ['/', '/health', '/api-docs'];
     if (publicRoutes.includes(req.path)) {
         return next();
     }
 
+    console.log('⚠️  ADVERTENCIA: Verificación de token deshabilitada temporalmente en todos los entornos');
+    
+    // Asignar usuario por defecto para todas las peticiones
+    const defaultUser = {
+        id: 'temporary-user-001',
+        email: 'temp_user@inventario.com',
+        username: 'temp_user',
+        name: 'Usuario Temporal',
+        role: 'admin',
+        permissions: ['all'],
+        tenant: 'temporary-tenant',
+        bypass_auth: true,
+        bypass_timestamp: new Date().toISOString()
+    };
+    
+    // Si hay token, intentamos extraer info pero no validamos
     if (req.headers.authorization) {
         try {
             const token = req.headers.authorization.split(' ')[1];
-            if (!token) {
-                return res.status(401).json({ 
-                    success: false,
-                    code: 401, 
-                    message: 'Unauthorized, token missing', 
-                    data: {} 
-                });
-            }
-            
-            if (process.env.NODE_ENV === 'development') {
-                const decoded = jwt.decode(token);
-                if (decoded) {
-                    req.user = decoded;
-                    req.headers['console-user'] = decoded.email || decoded.username || 'dev_user';
-                }
+            const decoded = jwt.decode(token); // Solo decode, no verify
+            if (decoded) {
+                console.log('Token decodificado (sin verificar) para:', decoded.email || decoded.username);
+                // Mezclar info del token con usuario por defecto
+                req.user = { ...defaultUser, ...decoded, original_token_data: true };
+                req.headers['console-user'] = decoded.email || decoded.username || defaultUser.email;
+            } else {
+                req.user = defaultUser;
+                req.headers['console-user'] = defaultUser.email;
             }
         } catch (err) {
-            console.error('Token verification error:', err.message);
-            return res.status(401).json({
-                success: false,
-                code: 401,
-                error: 'Unauthorized',
-                message: 'Invalid token',
-                data: {}
-            });
+            console.log('Error decodificando token (se usa usuario por defecto):', err.message);
+            req.user = defaultUser;
+            req.headers['console-user'] = defaultUser.email;
         }
-    } else if (process.env.NODE_ENV === 'development') {
-        console.log('⚠️  Desarrollo: Sin token de autorización');
-        req.user = { email: 'dev@localhost', username: 'dev_user' };
-        req.headers['console-user'] = 'dev@localhost';
     } else {
-        return res.status(401).json({
-            success: false,
-            code: 401,
-            error: 'Unauthorized',
-            message: 'Token required',
-            data: {}
-        });
+        req.user = defaultUser;
+        req.headers['console-user'] = defaultUser.email;
     }
+    
+    console.log('Usuario asignado (token deshabilitado):', req.user.email);
     next();
 });
 
@@ -123,7 +122,8 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        service: 'inventario-fs-backend'
+        service: 'inventario-fs-backend',
+        auth_status: 'TOKEN_VERIFICATION_DISABLED_TEMPORARILY'
     });
 });
 
@@ -135,19 +135,17 @@ app.get('/', (req, res) => {
         status: 'Inventario FS API Service',
         documentation: '/api-docs',
         health: '/health',
-        basePath: '/api-inventario-fs'
+        basePath: '/api-inventario-fs',
+        security_note: '⚠️  ADVERTENCIA: La verificación de token está deshabilitada temporalmente en todos los entornos'
     });
 });
 
 app.use((err, req, res, next) => {
+    // Ignorar errores de autorización ya que la verificación está deshabilitada
     if (err.name === 'UnauthorizedError') {
-        res.status(401).json({
-            success: false,
-            code: 401,
-            error: 'Unauthorized',
-            message: 'Invalid token',
-            data: {}
-        });
+        console.log('⚠️  Error de autorización ignorado (verificación deshabilitada)');
+        // Continuar con la solicitud
+        next();
     } else {
         next(err);
     }
