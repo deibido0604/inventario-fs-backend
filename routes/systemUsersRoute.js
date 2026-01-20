@@ -1,12 +1,9 @@
 var express = require("express");
 const {
-  jwtObject,
   getValidation,
   validate,
-  authenticateUser,
 } = require("../middleware/middlewareRules");
 const systemUserController = require("../controllers/systemUserController");
-
 
 const {
   getAllSystemUsers,
@@ -20,42 +17,20 @@ const {
 
 var systemUserRouter = express.Router();
 
-systemUserRouter.post(
-  "/login",
-  loginSystemUser
-);
-
-systemUserRouter.get("/list", jwtObject, getAllSystemUsers);
-systemUserRouter.get("/:id", jwtObject, getSystemUserById);
+systemUserRouter.post("/login", loginSystemUser);
+systemUserRouter.get("/list", getAllSystemUsers);
+systemUserRouter.get("/:id", getSystemUserById);
 systemUserRouter.post(
   "/create",
-  [
-    getValidation("create:user"),
-    validate,
-    jwtObject,
-    authenticateUser,
-  ],
+  [getValidation("create:user"), validate],
   createSystemUser
 );
 systemUserRouter.put(
   "/update",
-  [
-    getValidation("update:user"),
-    validate,
-    jwtObject,
-    authenticateUser,
-  ],
+  [getValidation("update:user"), validate],
   updateSystemUser
 );
-systemUserRouter.delete(
-  "/delete/:id", 
-  [jwtObject, authenticateUser], 
-  deleteSystemUser
-);
-systemUserRouter.post(
-  "/logout",
-  [jwtObject, authenticateUser],
-  logoutSystemUser
-);
+systemUserRouter.delete("/delete/:id", deleteSystemUser);
+systemUserRouter.post("/logout", logoutSystemUser);
 
 module.exports = systemUserRouter;
