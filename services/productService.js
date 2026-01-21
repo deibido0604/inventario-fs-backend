@@ -30,7 +30,7 @@ function productService() {
         updatedAt: p.updatedAt,
       }));
     } catch (e) {
-      throw new Error(e.message); // Lanza error para que el controlador lo maneje
+      return buildError(500, e.message);
     }
   }
   async function getProductById(id) {

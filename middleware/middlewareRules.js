@@ -1,14 +1,18 @@
 const jwt = require("jsonwebtoken");
 const { check, validationResult } = require("express-validator");
 const Response = require("../components/response");
+const { branchValidation } = require("./body_validations/branchValidation");
 
 const validators = {
   login: [
     check("username", "username does not exist.").exists(),
     check("password", "password does not exist.").exists(),
   ],
-  "create:user": [], // Agrega validadores si los necesitas
-  "update:user": [], // Agrega validadores si los necesitas
+  "create:user": [],
+  "update:user": [],
+
+  'create:branch': branchValidation['create:branch'],
+  'update:branch': branchValidation['update:branch'],
 };
 
 function middlewareRules() {

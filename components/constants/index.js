@@ -10,5 +10,10 @@ module.exports = {
     CREATE_ROLS: "Creación de rol",
 
     UPDATE_USER: "Actualización de usuario",
+
+    CREATE_BRANCH: "CREATE_BRANCH",
+    UPDATE_BRANCH: "UPDATE_BRANCH",
+    DELETE_BRANCH: "DELETE_BRANCH",
+    DEACTIVATE_BRANCH: "DEACTIVATE_BRANCH",
   },
 };
