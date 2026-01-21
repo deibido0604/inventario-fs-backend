@@ -9,5 +9,4 @@ module.exports = {
   InventoryMovement: require("./InventoryMovement"),
   Outbound: require("./Outbound"),
   OutboundDetail: require("./OutboundDetail"),
-  SystemConfig: require("./SystemConfig"),
 };

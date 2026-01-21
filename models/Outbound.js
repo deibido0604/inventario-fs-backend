@@ -5,7 +5,6 @@ const Schema = mongoose.Schema;
 const schema = {
   outbound_number: {
     type: String,
-    required: true,
     unique: true
   },
   source_branch: {
