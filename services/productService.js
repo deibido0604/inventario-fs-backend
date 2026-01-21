@@ -5,67 +5,34 @@ const constants = require("../components/constants/index");
 const { buildError } = require("../utils/response");
 
 function productService() {
-  async function getAllProducts(skip = 0, limit = 10, filters = {}) {
+  async function getAllProducts() {
     try {
       const query = {};
 
-      if (filters.active !== undefined) {
-        query.active = filters.active === "true";
-      }
+      const products = await Product.find(query).sort({ name: 1 }).lean();
 
-      if (filters.category) {
-        query.category = filters.category;
-      }
-
-      if (filters.search) {
-        query.$or = [
-          { name: { $regex: filters.search, $options: "i" } },
-          { code: { $regex: filters.search, $options: "i" } },
-          { barcode: { $regex: filters.search, $options: "i" } },
-          { description: { $regex: filters.search, $options: "i" } },
-        ];
-      }
-
-      const [products, total] = await Promise.all([
-        Product.find(query)
-          .skip(parseInt(skip))
-          .limit(parseInt(limit))
-          .sort({ name: 1 })
-          .lean(),
-        Product.countDocuments(query),
-      ]);
-
-      return {
-        products: products.map((p) => ({
-          _id: p._id.toString(),
-          code: p.code,
-          name: p.name,
-          description: p.description,
-          unit_cost: p.unit_cost,
-          unit_price: p.unit_price,
-          category: p.category,
-          subcategory: p.subcategory,
-          brand: p.brand,
-          min_stock: p.min_stock,
-          max_stock: p.max_stock,
-          unit_of_measure: p.unit_of_measure,
-          barcode: p.barcode,
-          active: p.active,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-        })),
-        pagination: {
-          total,
-          skip: parseInt(skip),
-          limit: parseInt(limit),
-          hasMore: total > parseInt(skip) + parseInt(limit),
-        },
-      };
+      return products.map((p) => ({
+        _id: p._id.toString(),
+        code: p.code,
+        name: p.name,
+        description: p.description,
+        unit_cost: p.unit_cost,
+        unit_price: p.unit_price,
+        category: p.category,
+        subcategory: p.subcategory,
+        brand: p.brand,
+        min_stock: p.min_stock,
+        max_stock: p.max_stock,
+        unit_of_measure: p.unit_of_measure,
+        barcode: p.barcode,
+        active: p.active,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }));
     } catch (e) {
-      return buildError(500, e.message);
+      throw new Error(e.message); // Lanza error para que el controlador lo maneje
     }
   }
-
   async function getProductById(id) {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) {
