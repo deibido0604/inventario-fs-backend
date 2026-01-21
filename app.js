@@ -73,7 +73,7 @@ app.use(async (req, res, next) => {
         return next();
     }
 
-    console.log('⚠️  ADVERTENCIA: Verificación de token deshabilitada temporalmente en todos los entornos');
+    // console.log('⚠️  ADVERTENCIA: Verificación de token deshabilitada temporalmente en todos los entornos');
     
     // Asignar usuario por defecto para todas las peticiones
     const defaultUser = {
@@ -94,7 +94,7 @@ app.use(async (req, res, next) => {
             const token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.decode(token); // Solo decode, no verify
             if (decoded) {
-                console.log('Token decodificado (sin verificar) para:', decoded.email || decoded.username);
+                // console.log('Token decodificado (sin verificar) para:', decoded.email || decoded.username);
                 // Mezclar info del token con usuario por defecto
                 req.user = { ...defaultUser, ...decoded, original_token_data: true };
                 req.headers['console-user'] = decoded.email || decoded.username || defaultUser.email;
@@ -103,7 +103,7 @@ app.use(async (req, res, next) => {
                 req.headers['console-user'] = defaultUser.email;
             }
         } catch (err) {
-            console.log('Error decodificando token (se usa usuario por defecto):', err.message);
+            // console.log('Error decodificando token (se usa usuario por defecto):', err.message);
             req.user = defaultUser;
             req.headers['console-user'] = defaultUser.email;
         }
@@ -112,7 +112,7 @@ app.use(async (req, res, next) => {
         req.headers['console-user'] = defaultUser.email;
     }
     
-    console.log('Usuario asignado (token deshabilitado):', req.user.email);
+    // console.log('Usuario asignado (token deshabilitado):', req.user.email);
     next();
 });
 
@@ -143,7 +143,7 @@ app.get('/', (req, res) => {
 app.use((err, req, res, next) => {
     // Ignorar errores de autorización ya que la verificación está deshabilitada
     if (err.name === 'UnauthorizedError') {
-        console.log('⚠️  Error de autorización ignorado (verificación deshabilitada)');
+        // console.log('⚠️  Error de autorización ignorado (verificación deshabilitada)');
         // Continuar con la solicitud
         next();
     } else {

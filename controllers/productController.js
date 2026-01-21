@@ -5,18 +5,29 @@ const Response = require("../components/response");
 function productController() {
   async function getAllProducts(req, res) {
     const responseClass = new Response();
-    const { skip, limit } = req.query;
+    try {
+      const { skip = 0, limit = 10, active, category, search } = req.query;
 
-    productService
-      .getAllProducts(parseInt(skip), parseInt(limit))
-      .then((data) => {
-        return res
-          .status(200)
-          .send(responseClass.buildResponse(true, "success", 200, data));
-      })
-      .catch((error) => {
-        return res.status(error.code || 500).send(error);
-      });
+      const filters = {};
+      if (active !== undefined) filters.active = active;
+      if (category) filters.category = category;
+      if (search) filters.search = search;
+
+      productService
+        .getAllProducts(parseInt(skip), parseInt(limit), filters)
+        .then((data) => {
+          return res
+            .status(200)
+            .send(responseClass.buildResponse(true, "success", 200, data));
+        })
+        .catch((error) => {
+          return res.status(error.code || 500).send(error);
+        });
+    } catch (error) {
+      return res
+        .status(500)
+        .send(responseClass.buildResponse(false, error.message, 500));
+    }
   }
 
   async function getProductById(req, res) {
@@ -37,6 +48,16 @@ function productController() {
 
   async function createProduct(req, res) {
     const responseClass = new Response();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        success: false,
+        errors: errors.array(),
+        code: 422,
+      });
+    }
+
     const product = req.body;
 
     productService
@@ -45,7 +66,7 @@ function productController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Producto creado!", 200, data)
+            responseClass.buildResponse(true, "Producto creado!", 200, data),
           );
       })
       .catch((error) => {
@@ -55,6 +76,16 @@ function productController() {
 
   async function updateProduct(req, res) {
     const responseClass = new Response();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        success: false,
+        errors: errors.array(),
+        code: 422,
+      });
+    }
+
     const product = req.body;
 
     productService
@@ -63,7 +94,12 @@ function productController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Producto actualizado!", 200, data)
+            responseClass.buildResponse(
+              true,
+              "Producto actualizado!",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {
@@ -81,7 +117,45 @@ function productController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Producto eliminado!", 200, data)
+            responseClass.buildResponse(true, "Producto eliminado!", 200, data),
+          );
+      })
+      .catch((error) => {
+        return res.status(error.code || 500).send(error);
+      });
+  }
+
+  async function getProductByCode(req, res) {
+    const responseClass = new Response();
+    const { code } = req.params;
+
+    productService
+      .getProductByCode(code)
+      .then((data) => {
+        return res
+          .status(200)
+          .send(responseClass.buildResponse(true, "success", 200, data));
+      })
+      .catch((error) => {
+        return res.status(error.code || 500).send(error);
+      });
+  }
+
+  async function getProductStats(req, res) {
+    const responseClass = new Response();
+
+    productService
+      .getProductStats()
+      .then((data) => {
+        return res
+          .status(200)
+          .send(
+            responseClass.buildResponse(
+              true,
+              "Estadísticas obtenidas",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {
@@ -92,9 +166,11 @@ function productController() {
   return {
     getAllProducts,
     getProductById,
+    getProductByCode,
     createProduct,
     updateProduct,
     deleteProduct,
+    getProductStats,
   };
 }
 

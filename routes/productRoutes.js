@@ -1,6 +1,5 @@
 const express = require("express");
 const {
-  jwtObject,
   getValidation,
   validate,
   authenticateUser,
@@ -18,16 +17,19 @@ try {
 const {
   getAllProducts,
   getProductById,
+  getProductByCode,
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductStats
 } = productControllerFunc;
 
 const ProductRouter = express.Router();
 
 ProductRouter.get("/list", getAllProducts);
-
+ProductRouter.get("/stats", getProductStats);
 ProductRouter.get("/:id", getProductById);
+ProductRouter.get("/code/:code", getProductByCode);
 
 ProductRouter.post(
   "/create",
