@@ -1,4 +1,3 @@
-// controllers/outboundController.js
 const { validationResult } = require("express-validator");
 const outboundService = require("../services/outboundService");
 const Response = require("../components/response");
@@ -16,15 +15,20 @@ function outboundController() {
       });
     }
 
-    const outboundData = req.body;
+    const params = req.body;
 
     outboundService
-      .createOutbound(outboundData, req)
+      .createOutbound(params, req)
       .then((data) => {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Salida creada exitosamente", 200, data),
+            responseClass.buildResponse(
+              true,
+              "Salida creada exitosamente",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {
@@ -35,10 +39,10 @@ function outboundController() {
   async function listOutbounds(req, res) {
     const responseClass = new Response();
     try {
-      const filters = req.query;
+      const params = req.query;
 
       outboundService
-        .listOutbounds(filters, req)
+        .listOutbounds(params, req)
         .then((data) => {
           return res
             .status(200)
@@ -58,13 +62,23 @@ function outboundController() {
     const responseClass = new Response();
     const { id } = req.params;
 
+    const params = {
+      id: id,
+      ...req.body,
+    };
+
     outboundService
-      .receiveOutbound(id, req)
+      .receiveOutbound(params, req)
       .then((data) => {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Salida recibida exitosamente", 200, data),
+            responseClass.buildResponse(
+              true,
+              "Salida recibida exitosamente",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {
@@ -76,8 +90,13 @@ function outboundController() {
     const responseClass = new Response();
     const { id } = req.params;
 
+    const params = {
+      id: id,
+      ...req.query,
+    };
+
     outboundService
-      .getOutboundDetails(id, req)
+      .getOutboundDetails(params, req)
       .then((data) => {
         return res
           .status(200)
@@ -107,7 +126,14 @@ function outboundController() {
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Disponibilidad verificada", 200, data));
+          .send(
+            responseClass.buildResponse(
+              true,
+              "Disponibilidad verificada",
+              200,
+              data,
+            ),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -116,14 +142,29 @@ function outboundController() {
 
   async function getAvailableProducts(req, res) {
     const responseClass = new Response();
-    const { branchId } = req.params;
+
+    const { branchId } = req.query;
+
+    if (!branchId) {
+      return res
+        .status(400)
+        .send(
+          responseClass.buildResponse(
+            false,
+            "branchId es requerido en query parameters. Ejemplo: /available-products?branchId=123",
+            400,
+          ),
+        );
+    }
 
     outboundService
       .getAvailableProducts(branchId, req)
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Productos obtenidos", 200, data));
+          .send(
+            responseClass.buildResponse(true, "Productos obtenidos", 200, data),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -132,14 +173,21 @@ function outboundController() {
 
   async function getOutboundStats(req, res) {
     const responseClass = new Response();
-    const filters = req.query;
+    const params = req.query;
 
     outboundService
-      .getOutboundStats(filters, req)
+      .getOutboundStats(params, req)
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Estadísticas obtenidas", 200, data));
+          .send(
+            responseClass.buildResponse(
+              true,
+              "Estadísticas obtenidas",
+              200,
+              data,
+            ),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -155,7 +203,9 @@ function outboundController() {
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Límite verificado", 200, data));
+          .send(
+            responseClass.buildResponse(true, "Límite verificado", 200, data),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -166,13 +216,23 @@ function outboundController() {
     const responseClass = new Response();
     const { id } = req.params;
 
+    const params = {
+      id: id,
+      ...req.body,
+    };
+
     outboundService
-      .cancelOutbound(id, req)
+      .cancelOutbound(params, req)
       .then((data) => {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Salida cancelada exitosamente", 200, data),
+            responseClass.buildResponse(
+              true,
+              "Salida cancelada exitosamente",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {

@@ -1,4 +1,3 @@
-// services/outboundService.js
 "use strict";
 const mongoose = require("mongoose");
 const Outbound = require("../models/Outbound");
@@ -7,7 +6,7 @@ const Batch = require("../models/Batch");
 const InventoryMovement = require("../models/InventoryMovement");
 const Branch = require("../models/Branch");
 const Product = require("../models/Products");
-const User = require("../models/SystemUser"); // Añadir modelo User
+const User = require("../models/SystemUser");
 const { buildError } = require("../utils/response");
 const logsConstructor = require("../utils/logs");
 const constants = require("../components/constants/index");
@@ -16,12 +15,10 @@ function outboundService() {
   // Obtener la sucursal donde el usuario es manager
   async function getUserBranch(userId) {
     try {
-      // Buscar la sucursal donde este usuario es manager
       const branch = await Branch.findOne({
         manager: userId,
         active: true
       }).lean();
-      
       return branch;
     } catch (error) {
       console.error("Error obteniendo sucursal del usuario:", error);
@@ -178,17 +175,15 @@ function outboundService() {
     session.startTransaction();
 
     try {
-      const { destination_branch, notes, items, user } = params; // user es solo el ID
+      const { destination_branch, notes, items, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
-      // 1. Obtener sucursal del usuario (donde es manager)
+      
+      // 1. Obtener sucursal del usuario (donde es Jefe de Bodega)
       const sourceBranch = await getUserBranch(user);
       if (!sourceBranch) {
         throw buildError(400, "El usuario no es manager de ninguna sucursal activa");
@@ -367,16 +362,13 @@ function outboundService() {
   // Listar salidas con filtros
   async function listOutbounds(filters, req) {
     try {
-      const { startDate, endDate, destination_branch, status, search, user } = filters; // user es solo el ID
+      const { startDate, endDate, destination_branch, status, search, user } = filters;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
       const query = {};
 
       // Filtrar por fecha
@@ -407,9 +399,6 @@ function outboundService() {
       
       // Si el usuario no es admin y tiene sucursal, filtrar por su sucursal
       if (!userInfo.isAdmin && userBranch) {
-        // El usuario puede ver:
-        // 1. Salidas que salieron de su sucursal
-        // 2. Salidas que llegaron a su sucursal
         query.$or = [
           { source_branch: userBranch._id },
           { destination_branch: userBranch._id }
@@ -432,7 +421,6 @@ function outboundService() {
           const units = details.reduce((sum, detail) => sum + detail.quantity, 0);
 
           // Verificar si el usuario puede recibir esta salida
-          // Solo si es manager de la sucursal destino
           const canReceive = outbound.status === "Enviada a sucursal" && 
                            userBranch && 
                            userBranch._id.toString() === outbound.destination_branch._id.toString();
@@ -458,39 +446,34 @@ function outboundService() {
     session.startTransaction();
 
     try {
-      const { id, user } = params; // id y user (ID) vienen en el body
+      const { id, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
-      // 1. Obtener salida
       const outbound = await Outbound.findById(id).session(session);
       if (!outbound) {
         throw buildError(404, "Salida no encontrada");
       }
 
-      // 2. Validar estado
       if (outbound.status !== "Enviada a sucursal") {
         throw buildError(400, "La salida no está en estado 'Enviada a sucursal'");
       }
 
-      // 3. Verificar que el usuario es manager de la sucursal destino
+      // Verificar que el usuario es manager de la sucursal destino
       const userBranch = await getUserBranch(user);
       if (!userBranch || userBranch._id.toString() !== outbound.destination_branch.toString()) {
         throw buildError(403, "Solo el manager de la sucursal destino puede recibir esta salida");
       }
 
-      // 4. Obtener detalles de la salida
+      // Obtener detalles de la salida
       const details = await OutboundDetail.find({ outbound: id })
         .populate("product")
         .session(session);
 
-      // 5. Procesar recepción de cada producto
+      // Procesar recepción de cada producto
       for (const detail of details) {
         // Buscar lote en sucursal destino
         let batch = await Batch.findOne({
@@ -564,7 +547,7 @@ function outboundService() {
         }
       }
 
-      // 6. Actualizar salida
+      // Actualizar salida
       outbound.status = "Recibido en sucursal";
       outbound.received_date = new Date();
       outbound.received_by = user;
@@ -572,7 +555,7 @@ function outboundService() {
 
       await session.commitTransaction();
 
-      // 7. Registrar log
+      // Registrar log
       if (req && req.headers) {
         await logsConstructor(
           constants.LOG_TYPE.RECEIVE_OUTBOUND || "RECEIVE_OUTBOUND",
@@ -599,15 +582,11 @@ function outboundService() {
   // Verificar disponibilidad de producto
   async function checkProductAvailability(params, req) {
     try {
-      const { productId, quantity, user } = params; // user es solo el ID
+      const { productId, quantity, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
-
-      // Obtener información del usuario
-      const userInfo = await getUserById(user);
 
       // Obtener sucursal del usuario
       const userBranch = await getUserBranch(user);
@@ -615,6 +594,7 @@ function outboundService() {
         return buildError(400, "El usuario no es manager de ninguna sucursal");
       }
 
+      // Verificar disponibilidad en la sucursal del usuario
       const stockCheck = await validateProductStock(
         productId, 
         quantity, 
@@ -656,16 +636,13 @@ function outboundService() {
   // Obtener detalles de una salida
   async function getOutboundDetails(params, req) {
     try {
-      const { id, user } = params; // id y user (ID) vienen en el body
+      const { id, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
       const outbound = await Outbound.findById(id)
         .populate("source_branch", "name code address city phone email")
         .populate("destination_branch", "name code address city phone email")
@@ -703,33 +680,18 @@ function outboundService() {
     }
   }
 
-  // Obtener productos disponibles en la sucursal del usuario
-  async function getAvailableProducts(params, req) {
+  // Obtener productos disponibles en la sucursal (NO necesita user, solo branchId)
+  async function getAvailableProducts(branchId, req) {
     try {
-      const { branchId, user } = params; // user es solo el ID
+      console.log("getAvailableProducts - branchId recibido:", branchId);
       
-      // Validar que venga el usuario en el body
-      if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
-      }
-
-      // Obtener información del usuario
-      const userInfo = await getUserById(user);
-
-      let targetBranchId = branchId;
-
-      // Si no se especifica branchId, usar la sucursal del usuario
-      if (!targetBranchId) {
-        const userBranch = await getUserBranch(user);
-        if (!userBranch) {
-          throw buildError(400, "El usuario no es manager de ninguna sucursal");
-        }
-        targetBranchId = userBranch._id;
+      if (!branchId) {
+        throw buildError(400, "ID de sucursal requerido");
       }
 
       // Buscar lotes con stock en la sucursal
       const batches = await Batch.find({
-        branch: targetBranchId,
+        branch: branchId,
         current_stock: { $gt: 0 }
       })
         .populate("product")
@@ -771,7 +733,6 @@ function outboundService() {
       }
 
       const products = Array.from(productMap.values());
-
       return products;
 
     } catch (error) {
@@ -782,16 +743,13 @@ function outboundService() {
   // Obtener estadísticas
   async function getOutboundStats(params, req) {
     try {
-      const { startDate, endDate, branchId, user } = params; // user es solo el ID
+      const { startDate, endDate, branchId, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
       const match = {};
       
       if (startDate && endDate) {
@@ -811,7 +769,6 @@ function outboundService() {
           ];
         }
       } else if (branchId) {
-        // Filtrar por sucursal específica si es admin
         match.$or = [
           { source_branch: branchId },
           { destination_branch: branchId }
@@ -859,17 +816,13 @@ function outboundService() {
     session.startTransaction();
 
     try {
-      const { id, user } = params; // id y user (ID) vienen en el body
+      const { id, user } = params;
       
-      // Validar que venga el usuario en el body
       if (!user) {
-        throw buildError(400, "ID de usuario no proporcionado en el cuerpo de la solicitud");
+        throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener información del usuario
       const userInfo = await getUserById(user);
-
-      // 1. Obtener salida
       const outbound = await Outbound.findById(id).session(session);
       if (!outbound) {
         throw buildError(404, "Salida no encontrada");
@@ -883,16 +836,16 @@ function outboundService() {
         throw buildError(400, "La salida ya está cancelada");
       }
 
-      // 2. Verificar que el usuario es manager de la sucursal de origen
+      // Verificar que el usuario es manager de la sucursal de origen
       const userBranch = await getUserBranch(user);
       if (!userBranch || userBranch._id.toString() !== outbound.source_branch.toString()) {
         throw buildError(403, "Solo el manager de la sucursal de origen puede cancelar esta salida");
       }
 
-      // 3. Obtener detalles
+      // Obtener detalles
       const details = await OutboundDetail.find({ outbound: id }).session(session);
 
-      // 4. Revertir stock en lotes originales
+      // Revertir stock en lotes originales
       for (const detail of details) {
         const batch = await Batch.findById(detail.batch).session(session);
         if (batch) {
@@ -920,13 +873,13 @@ function outboundService() {
         }
       }
 
-      // 5. Actualizar estado
+      // Actualizar estado
       outbound.status = "Cancelada";
       await outbound.save({ session });
 
       await session.commitTransaction();
 
-      // 6. Registrar log
+      // Registrar log
       if (req && req.headers) {
         await logsConstructor(
           constants.LOG_TYPE.CANCEL_OUTBOUND || "CANCEL_OUTBOUND",

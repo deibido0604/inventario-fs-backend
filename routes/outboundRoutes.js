@@ -1,4 +1,4 @@
-// routes/outboundRoutes.js
+// routes/outboundRoutes.js - CORREGIDO
 var express = require('express');
 const {
   jwtObject,
@@ -25,6 +25,28 @@ var outboundRouter = express.Router();
 // Todas las rutas requieren autenticación
 outboundRouter.use(jwtObject, authenticateUser);
 
+// Obtener productos disponibles en una sucursal
+outboundRouter.get('/available-products/:branchId', getAvailableProducts);
+
+// También aceptar query param (opcional)
+outboundRouter.get('/available-products', getAvailableProducts);
+
+// Listar salidas con filtros
+outboundRouter.get('/list', listOutbounds);
+
+// Verificar límite de sucursal
+outboundRouter.get('/check-limit/:branchId', checkBranchLimit);
+
+// Obtener estadísticas de salidas
+outboundRouter.get('/stats', getOutboundStats);
+
+// ===== RUTAS DINÁMICAS AL FINAL =====
+
+// Ver detalles de una salida (ESTA DEBE IR AL FINAL)
+outboundRouter.get('/:id', getOutboundDetails);
+
+// ===== RUTAS POST =====
+
 // Crear salida
 outboundRouter.post(
   '/create',
@@ -35,17 +57,11 @@ outboundRouter.post(
   createOutbound,
 );
 
-// Listar salidas con filtros
-outboundRouter.get('/list', listOutbounds);
-
 // Recibir salida
 outboundRouter.post('/receive/:id', receiveOutbound);
 
 // Cancelar salida
 outboundRouter.post('/cancel/:id', cancelOutbound);
-
-// Ver detalles de una salida
-outboundRouter.get('/:id', getOutboundDetails);
 
 // Verificar disponibilidad de producto
 outboundRouter.post(
@@ -56,14 +72,5 @@ outboundRouter.post(
   ],
   checkAvailability,
 );
-
-// Obtener productos disponibles en una sucursal
-outboundRouter.get('/available-products/:branchId', getAvailableProducts);
-
-// Obtener estadísticas de salidas
-outboundRouter.get('/stats', getOutboundStats);
-
-// Verificar límite de sucursal
-outboundRouter.get('/check-limit/:branchId', checkBranchLimit);
 
 module.exports = outboundRouter;
