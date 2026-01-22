@@ -263,6 +263,13 @@ function systemUserService() {
         return buildError(401, "Credenciales incorrectas!");
       }
 
+      const branch = await models.Branch.findOne({
+        manager: user._id,
+        active: true,
+      })
+        .select("code name _id address city phone email max_outstanding_amount")
+        .lean();
+
       user.lastLogin = new Date();
       await user.save();
 
@@ -279,6 +286,16 @@ function systemUserService() {
           type: role.type,
         })),
         permissions: [],
+        // Incluir información de la sucursal si existe
+        ...(branch && {
+          branch: {
+            id: branch._id.toString(),
+            code: branch.code,
+            name: branch.name,
+            city: branch.city,
+            max_outstanding_amount: branch.max_outstanding_amount || 5000,
+          },
+        }),
       };
 
       user.roles.forEach((role) => {
@@ -302,12 +319,18 @@ function systemUserService() {
       const userResponse = user.toObject();
       delete userResponse.password;
 
+      // Agregar sucursal a la respuesta del login
+      if (branch) {
+        userResponse.branch = branch;
+      }
+
       await logsConstructor(
         constants.LOG_TYPE.USER_LOGIN,
         { _id: user._id, username: user.username },
         "Inicio de sesión exitoso",
         user.username,
       );
+
       return {
         ...userResponse,
         token,
