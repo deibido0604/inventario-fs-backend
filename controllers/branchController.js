@@ -50,7 +50,7 @@ function branchController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Sucursal creada!", 200, data)
+            responseClass.buildResponse(true, "Sucursal creada!", 200, data),
           );
       })
       .catch((error) => {
@@ -68,7 +68,12 @@ function branchController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Sucursal actualizada!", 200, data)
+            responseClass.buildResponse(
+              true,
+              "Sucursal actualizada!",
+              200,
+              data,
+            ),
           );
       })
       .catch((error) => {
@@ -86,7 +91,7 @@ function branchController() {
         return res
           .status(200)
           .send(
-            responseClass.buildResponse(true, "Sucursal eliminada!", 200, data)
+            responseClass.buildResponse(true, "Sucursal eliminada!", 200, data),
           );
       })
       .catch((error) => {
@@ -102,7 +107,14 @@ function branchController() {
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Estadísticas obtenidas", 200, data));
+          .send(
+            responseClass.buildResponse(
+              true,
+              "Estadísticas obtenidas",
+              200,
+              data,
+            ),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -117,7 +129,42 @@ function branchController() {
       .then((data) => {
         return res
           .status(200)
-          .send(responseClass.buildResponse(true, "Sucursales activas", 200, data));
+          .send(
+            responseClass.buildResponse(true, "Sucursales activas", 200, data),
+          );
+      })
+      .catch((error) => {
+        return res.status(error.code || 500).send(error);
+      });
+  }
+
+  async function getDestinationBranchesForUser(req, res) {
+    const responseClass = new Response();
+
+    // Obtener userId del query parameter
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .send(
+          responseClass.buildResponse(false, "ID de usuario requerido", 400),
+        );
+    }
+
+    branchService
+      .getDestinationBranchesForUser(userId)
+      .then((data) => {
+        return res
+          .status(200)
+          .send(
+            responseClass.buildResponse(
+              true,
+              "Sucursales destino obtenidas",
+              200,
+              data,
+            ),
+          );
       })
       .catch((error) => {
         return res.status(error.code || 500).send(error);
@@ -132,6 +179,7 @@ function branchController() {
     deleteBranch,
     getBranchStats,
     getActiveBranches,
+    getDestinationBranchesForUser,
   };
 }
 

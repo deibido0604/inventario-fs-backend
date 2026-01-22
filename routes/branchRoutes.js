@@ -22,6 +22,7 @@ const {
   deleteBranch,
   getBranchStats,
   getActiveBranches,
+  getDestinationBranchesForUser,
 } = branchControllerFunc;
 
 const BranchRouter = express.Router();
@@ -34,15 +35,17 @@ BranchRouter.get("/:id", getBranchById);
 BranchRouter.post(
   "/create",
   [getValidation("create:branch"), validate],
-  createBranch
+  createBranch,
 );
 
 BranchRouter.put(
   "/update",
   [getValidation("update:branch"), validate],
-  updateBranch
+  updateBranch,
 );
 
 BranchRouter.delete("/delete/:id", deleteBranch);
+
+BranchRouter.get("/user-destinations", getDestinationBranchesForUser);
 
 module.exports = BranchRouter;

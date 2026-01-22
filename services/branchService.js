@@ -105,7 +105,7 @@ function branchService() {
           constants.LOG_TYPE.CREATE_BRANCH || "CREATE_BRANCH",
           savedBranch,
           "Sucursal creada",
-          req.headers["console-user"] || "system"
+          req.headers["console-user"] || "system",
         );
       }
 
@@ -151,7 +151,8 @@ function branchService() {
         city: param.city || existingBranch.city,
         phone: param.phone !== undefined ? param.phone : existingBranch.phone,
         email: param.email !== undefined ? param.email : existingBranch.email,
-        manager: param.manager !== undefined ? param.manager : existingBranch.manager,
+        manager:
+          param.manager !== undefined ? param.manager : existingBranch.manager,
         max_outstanding_amount:
           param.max_outstanding_amount !== undefined
             ? param.max_outstanding_amount
@@ -163,7 +164,7 @@ function branchService() {
       const updatedBranch = await Branch.findByIdAndUpdate(
         param.id,
         updateData,
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       if (req && req.headers) {
@@ -171,7 +172,7 @@ function branchService() {
           constants.LOG_TYPE.UPDATE_BRANCH || "UPDATE_BRANCH",
           updatedBranch,
           "Sucursal actualizada",
-          req.headers["console-user"] || "system"
+          req.headers["console-user"] || "system",
         );
       }
 
@@ -202,7 +203,7 @@ function branchService() {
           constants.LOG_TYPE.DELETE_BRANCH || "DELETE_BRANCH",
           deletedBranch,
           "Sucursal eliminada",
-          req.headers["console-user"] || "system"
+          req.headers["console-user"] || "system",
         );
       }
 
@@ -232,7 +233,7 @@ function branchService() {
           constants.LOG_TYPE.DEACTIVATE_BRANCH || "DEACTIVATE_BRANCH",
           branch,
           "Sucursal desactivada",
-          req.headers["console-user"] || "system"
+          req.headers["console-user"] || "system",
         );
       }
 
@@ -327,6 +328,43 @@ function branchService() {
     }
   }
 
+  async function getDestinationBranchesForUser(userId) {
+    try {
+      // 1. Buscar la sucursal donde el usuario es manager
+      const userBranch = await Branch.findOne({
+        manager: userId,
+        active: true,
+      }).lean();
+
+      // Si el usuario no tiene sucursal, devolver todas las sucursales activas
+      let query = { active: true };
+
+      // 2. Si el usuario tiene sucursal, excluirla
+      if (userBranch) {
+        query._id = { $ne: userBranch._id };
+      }
+
+      // 3. Obtener sucursales que NO son del usuario
+      const destinationBranches = await Branch.find(query)
+        .select("_id code name city")
+        .sort({ name: 1 })
+        .lean();
+
+      // 4. Formatear respuesta para dropdown
+      return destinationBranches.map((branch) => ({
+        value: branch._id.toString(),
+        label: `${branch.name} (${branch.city})`,
+        id: branch._id,
+        code: branch.code,
+        name: branch.name,
+        city: branch.city,
+      }));
+    } catch (error) {
+      console.log(error)
+      return buildError(500, error.message);
+    }
+  }
+
   return {
     getAllBranches,
     getBranchById,
@@ -337,6 +375,7 @@ function branchService() {
     deactivateBranch,
     getBranchStats,
     getActiveBranches,
+    getDestinationBranchesForUser
   };
 }
 
