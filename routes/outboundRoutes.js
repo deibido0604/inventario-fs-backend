@@ -35,7 +35,7 @@ outboundRouter.get('/available-products', getAvailableProducts);
 outboundRouter.get('/list', listOutbounds);
 
 // Verificar límite de sucursal
-outboundRouter.get('/check-limit/:branchId', checkBranchLimit);
+outboundRouter.get('/check-limit', checkBranchLimit);
 
 // Obtener estadísticas de salidas
 outboundRouter.get('/stats', getOutboundStats);

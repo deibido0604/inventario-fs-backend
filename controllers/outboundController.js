@@ -196,7 +196,7 @@ function outboundController() {
 
   async function checkBranchLimit(req, res) {
     const responseClass = new Response();
-    const { branchId } = req.params;
+    const { branchId } = req.query;
 
     outboundService
       .checkDestinationBranchLimit(branchId)
