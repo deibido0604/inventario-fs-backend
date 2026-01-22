@@ -3,6 +3,7 @@ const {
   getValidation,
   validate,
   authenticateUser,
+  jwtObject,
 } = require("../middleware/middlewareRules");
 
 const branchController = require("../controllers/branchController");
@@ -27,10 +28,15 @@ const {
 
 const BranchRouter = express.Router();
 
+BranchRouter.use(jwtObject, authenticateUser);
+
 BranchRouter.get("/list", getAllBranches);
 BranchRouter.get("/stats", getBranchStats);
 BranchRouter.get("/active", getActiveBranches);
+BranchRouter.get("/user-destinations", getDestinationBranchesForUser);
+
 BranchRouter.get("/:id", getBranchById);
+BranchRouter.delete("/delete/:id", deleteBranch);
 
 BranchRouter.post(
   "/create",
@@ -43,9 +49,5 @@ BranchRouter.put(
   [getValidation("update:branch"), validate],
   updateBranch,
 );
-
-BranchRouter.delete("/delete/:id", deleteBranch);
-
-BranchRouter.get("/user-destinations", getDestinationBranchesForUser);
 
 module.exports = BranchRouter;
