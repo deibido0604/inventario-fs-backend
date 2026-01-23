@@ -330,27 +330,22 @@ function branchService() {
 
   async function getDestinationBranchesForUser(userId) {
     try {
-      // 1. Buscar la sucursal donde el usuario es manager
       const userBranch = await Branch.findOne({
         manager: userId,
         active: true,
       }).lean();
 
-      // Si el usuario no tiene sucursal, devolver todas las sucursales activas
       let query = { active: true };
 
-      // 2. Si el usuario tiene sucursal, excluirla
       if (userBranch) {
         query._id = { $ne: userBranch._id };
       }
 
-      // 3. Obtener sucursales que NO son del usuario
       const destinationBranches = await Branch.find(query)
         .select("_id code name city")
         .sort({ name: 1 })
         .lean();
 
-      // 4. Formatear respuesta para dropdown
       return destinationBranches.map((branch) => ({
         value: branch._id.toString(),
         label: `${branch.name} (${branch.city})`,
@@ -360,7 +355,6 @@ function branchService() {
         city: branch.city,
       }));
     } catch (error) {
-      console.log(error)
       return buildError(500, error.message);
     }
   }

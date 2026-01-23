@@ -1,4 +1,3 @@
-// controllers/batchController.js - Versión SIMPLIFICADA
 const { validationResult } = require("express-validator");
 const batchService = require("../services/batchService");
 const Response = require("../components/response");

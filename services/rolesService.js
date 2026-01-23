@@ -104,7 +104,6 @@ function rolesService() {
 
       return data;
     } catch (e) {
-      console.error(e)
       return buildError(500, e.message);
     }
   }

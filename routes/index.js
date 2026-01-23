@@ -23,9 +23,9 @@ files.forEach(file => {
         const routeModule = require(`./${filename}`);
         
         router.use(`/${route}`, routeModule);
-        console.log(`✅ /${route}`);
+        console.log(` /${route}`);
     } catch (error) {
-        console.error(`❌ Error cargando ${filename}:`, error.message);
+        console.error(` Error cargando ${filename}:`, error.message);
     }
 });
 

@@ -12,7 +12,6 @@ const logsConstructor = require("../utils/logs");
 const constants = require("../components/constants/index");
 
 function outboundService() {
-  // Obtener la sucursal donde el usuario es manager
   async function getUserBranch(userId) {
     try {
       const branch = await Branch.findOne({
@@ -21,12 +20,10 @@ function outboundService() {
       }).lean();
       return branch;
     } catch (error) {
-      console.error("Error obteniendo sucursal del usuario:", error);
       return null;
     }
   }
 
-  // Obtener información del usuario por ID
   async function getUserById(userId) {
     try {
       const user = await User.findById(userId).lean();
@@ -39,7 +36,6 @@ function outboundService() {
     }
   }
 
-  // Verificar límite de L 5000 para sucursal destino
   async function checkDestinationBranchLimit(destinationBranchId) {
     try {
       const pendingOutbounds = await Outbound.find({
@@ -70,7 +66,6 @@ function outboundService() {
     }
   }
 
-  // Validar disponibilidad de producto en una sucursal
   async function validateProductStock(productId, quantity, branchId) {
     try {
       const batches = await Batch.find({
@@ -113,7 +108,6 @@ function outboundService() {
     }
   }
 
-  // Seleccionar lotes automáticamente (FIFO)
   async function selectBatchesForProduct(productId, quantity, branchId, session = null) {
     try {
       const query = {
@@ -169,7 +163,6 @@ function outboundService() {
     }
   }
 
-  // Crear salida de inventario
   async function createOutbound(params, req) {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -183,30 +176,25 @@ function outboundService() {
 
       const userInfo = await getUserById(user);
       
-      // 1. Obtener sucursal del usuario (donde es Jefe de Bodega)
       const sourceBranch = await getUserBranch(user);
       if (!sourceBranch) {
         throw buildError(400, "El usuario no es manager de ninguna sucursal activa");
       }
 
-      // 2. Validar sucursal destino
       const destinationBranch = await Branch.findById(destination_branch).session(session);
       if (!destinationBranch || !destinationBranch.active) {
         throw buildError(404, "Sucursal destino no encontrada o inactiva");
       }
 
-      // 3. Verificar que no se envíe a la misma sucursal
       if (sourceBranch._id.toString() === destinationBranch._id.toString()) {
         throw buildError(400, "No puede enviar productos a la misma sucursal de origen");
       }
 
-      // 4. Verificar límite de L 5000
       const limitCheck = await checkDestinationBranchLimit(destination_branch);
       if (!limitCheck.withinLimit) {
         throw buildError(400, limitCheck.message);
       }
 
-      // 5. Procesar cada item
       let totalUnits = 0;
       let totalCost = 0;
       const processedItems = [];
@@ -216,18 +204,15 @@ function outboundService() {
       for (const item of items) {
         const { productId, quantity } = item;
 
-        // Validar producto
         const product = await Product.findById(productId).session(session);
         if (!product || !product.active) {
           throw buildError(404, `Producto no encontrado o inactivo`);
         }
 
-        // Validar cantidad mínima
         if (quantity <= 0) {
           throw buildError(400, `Cantidad inválida para producto ${product.code}`);
         }
 
-        // Seleccionar lotes (FIFO)
         const batchSelection = await selectBatchesForProduct(
           productId, 
           quantity, 
@@ -239,15 +224,12 @@ function outboundService() {
           throw buildError(400, `Producto ${product.code}: ${batchSelection.message}`);
         }
 
-        // Procesar cada lote seleccionado
         for (const batch of batchSelection.batches) {
-          // Actualizar stock del lote
           batchUpdates.push({
             batchId: batch.batchId,
             newStock: batch.newStock
           });
 
-          // Registrar movimiento de inventario
           const movement = new InventoryMovement({
             movement_type: "salida",
             product: productId,
@@ -265,7 +247,6 @@ function outboundService() {
 
           inventoryMovements.push(movement);
 
-          // Agregar a items procesados
           processedItems.push({
             product: productId,
             productName: product.name,
@@ -283,7 +264,6 @@ function outboundService() {
         totalCost += batchSelection.totalCost;
       }
 
-      // 6. Crear encabezado de salida
       const outbound = new Outbound({
         source_branch: sourceBranch._id,
         destination_branch,
@@ -297,7 +277,6 @@ function outboundService() {
 
       await outbound.save({ session });
 
-      // 7. Actualizar stocks de lotes
       for (const update of batchUpdates) {
         await Batch.findByIdAndUpdate(
           update.batchId,
@@ -306,13 +285,11 @@ function outboundService() {
         );
       }
 
-      // 8. Guardar movimientos de inventario con referencia a la salida
       for (const movement of inventoryMovements) {
         movement.reference_id = outbound._id;
         await movement.save({ session });
       }
 
-      // 9. Crear detalles de la salida
       for (const item of processedItems) {
         const detail = new OutboundDetail({
           outbound: outbound._id,
@@ -330,7 +307,6 @@ function outboundService() {
 
       await session.commitTransaction();
 
-      // 10. Registrar log
       if (req && req.headers) {
         await logsConstructor(
           constants.LOG_TYPE.CREATE_OUTBOUND || "CREATE_OUTBOUND",
@@ -359,7 +335,6 @@ function outboundService() {
     }
   }
 
-  // Listar salidas con filtros
   async function listOutbounds(filters, req) {
     try {
       const { startDate, endDate, destination_branch, status, search, user } = filters;
@@ -371,7 +346,6 @@ function outboundService() {
       const userInfo = await getUserById(user);
       const query = {};
 
-      // Filtrar por fecha
       if (startDate && endDate) {
         query.createdAt = {
           $gte: new Date(startDate),
@@ -379,25 +353,20 @@ function outboundService() {
         };
       }
 
-      // Filtrar por sucursal destino
       if (destination_branch) {
         query.destination_branch = destination_branch;
       }
 
-      // Filtrar por estado
       if (status) {
         query.status = status;
       }
 
-      // Búsqueda por número
       if (search) {
         query.outbound_number = { $regex: search, $options: "i" };
       }
 
-      // Obtener sucursal del usuario
       const userBranch = await getUserBranch(user);
       
-      // Si el usuario no es admin y tiene sucursal, filtrar por su sucursal
       if (!userInfo.isAdmin && userBranch) {
         query.$or = [
           { source_branch: userBranch._id },
@@ -405,7 +374,6 @@ function outboundService() {
         ];
       }
 
-      // Obtener salidas
       const outbounds = await Outbound.find(query)
         .populate("source_branch", "name code")
         .populate("destination_branch", "name code")
@@ -414,13 +382,11 @@ function outboundService() {
         .sort({ createdAt: -1 })
         .lean();
 
-      // Obtener detalles para calcular unidades
       const outboundsWithDetails = await Promise.all(
         outbounds.map(async (outbound) => {
           const details = await OutboundDetail.find({ outbound: outbound._id });
           const units = details.reduce((sum, detail) => sum + detail.quantity, 0);
 
-          // Verificar si el usuario puede recibir esta salida
           const canReceive = outbound.status === "Enviada a sucursal" && 
                            userBranch && 
                            userBranch._id.toString() === outbound.destination_branch._id.toString();
@@ -440,7 +406,6 @@ function outboundService() {
     }
   }
 
-  // Recibir salida en sucursal destino
   async function receiveOutbound(params, req) {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -462,20 +427,16 @@ function outboundService() {
         throw buildError(400, "La salida no está en estado 'Enviada a sucursal'");
       }
 
-      // Verificar que el usuario es manager de la sucursal destino
       const userBranch = await getUserBranch(user);
       if (!userBranch || userBranch._id.toString() !== outbound.destination_branch.toString()) {
         throw buildError(403, "Solo el manager de la sucursal destino puede recibir esta salida");
       }
 
-      // Obtener detalles de la salida
       const details = await OutboundDetail.find({ outbound: id })
         .populate("product")
         .session(session);
 
-      // Procesar recepción de cada producto
       for (const detail of details) {
-        // Buscar lote en sucursal destino
         let batch = await Batch.findOne({
           batch_number: detail.batch_number,
           product: detail.product._id,
@@ -483,12 +444,10 @@ function outboundService() {
         }).session(session);
 
         if (batch) {
-          // Actualizar lote existente
           const previousStock = batch.current_stock;
           batch.current_stock += detail.quantity;
           await batch.save({ session });
 
-          // Registrar movimiento
           const movement = new InventoryMovement({
             movement_type: "entrada",
             product: detail.product._id,
@@ -507,7 +466,6 @@ function outboundService() {
 
           await movement.save({ session });
         } else {
-          // Crear nuevo lote en destino
           const sourceBatch = await Batch.findById(detail.batch).session(session);
           
           batch = new Batch({
@@ -526,7 +484,6 @@ function outboundService() {
 
           await batch.save({ session });
 
-          // Registrar movimiento
           const movement = new InventoryMovement({
             movement_type: "entrada",
             product: detail.product._id,
@@ -547,7 +504,6 @@ function outboundService() {
         }
       }
 
-      // Actualizar salida
       outbound.status = "Recibido en sucursal";
       outbound.received_date = new Date();
       outbound.received_by = user;
@@ -555,7 +511,6 @@ function outboundService() {
 
       await session.commitTransaction();
 
-      // Registrar log
       if (req && req.headers) {
         await logsConstructor(
           constants.LOG_TYPE.RECEIVE_OUTBOUND || "RECEIVE_OUTBOUND",
@@ -579,7 +534,6 @@ function outboundService() {
     }
   }
 
-  // Verificar disponibilidad de producto
   async function checkProductAvailability(params, req) {
     try {
       const { productId, quantity, user } = params;
@@ -588,13 +542,11 @@ function outboundService() {
         throw buildError(400, "ID de usuario requerido");
       }
 
-      // Obtener sucursal del usuario
       const userBranch = await getUserBranch(user);
       if (!userBranch) {
         return buildError(400, "El usuario no es manager de ninguna sucursal");
       }
 
-      // Verificar disponibilidad en la sucursal del usuario
       const stockCheck = await validateProductStock(
         productId, 
         quantity, 
@@ -605,7 +557,6 @@ function outboundService() {
         return stockCheck;
       }
 
-      // Si hay stock, obtener detalles de lotes
       if (stockCheck.isAvailable) {
         const batchSelection = await selectBatchesForProduct(
           productId, 
@@ -633,7 +584,6 @@ function outboundService() {
     }
   }
 
-  // Obtener detalles de una salida
   async function getOutboundDetails(params, req) {
     try {
       const { id, user } = params;
@@ -653,7 +603,6 @@ function outboundService() {
         throw buildError(404, "Salida no encontrada");
       }
 
-      // Verificar permisos
       const userBranch = await getUserBranch(user);
       const canView = userInfo.isAdmin || 
                      (userBranch && (
@@ -680,16 +629,12 @@ function outboundService() {
     }
   }
 
-  // Obtener productos disponibles en la sucursal (NO necesita user, solo branchId)
   async function getAvailableProducts(branchId, req) {
     try {
-      console.log("getAvailableProducts - branchId recibido:", branchId);
-      
       if (!branchId) {
         throw buildError(400, "ID de sucursal requerido");
       }
 
-      // Buscar lotes con stock en la sucursal
       const batches = await Batch.find({
         branch: branchId,
         current_stock: { $gt: 0 }
@@ -697,7 +642,6 @@ function outboundService() {
         .populate("product")
         .sort({ "product.name": 1, expiration_date: 1 });
 
-      // Agrupar por producto
       const productMap = new Map();
 
       for (const batch of batches) {
@@ -740,7 +684,6 @@ function outboundService() {
     }
   }
 
-  // Obtener estadísticas
   async function getOutboundStats(params, req) {
     try {
       const { startDate, endDate, branchId, user } = params;
@@ -759,7 +702,6 @@ function outboundService() {
         };
       }
       
-      // Si el usuario no es admin, filtrar por su sucursal
       if (!userInfo.isAdmin) {
         const userBranch = await getUserBranch(user);
         if (userBranch) {
@@ -810,7 +752,6 @@ function outboundService() {
     }
   }
 
-  // Cancelar salida
   async function cancelOutbound(params, req) {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -836,23 +777,19 @@ function outboundService() {
         throw buildError(400, "La salida ya está cancelada");
       }
 
-      // Verificar que el usuario es manager de la sucursal de origen
       const userBranch = await getUserBranch(user);
       if (!userBranch || userBranch._id.toString() !== outbound.source_branch.toString()) {
         throw buildError(403, "Solo el manager de la sucursal de origen puede cancelar esta salida");
       }
 
-      // Obtener detalles
       const details = await OutboundDetail.find({ outbound: id }).session(session);
 
-      // Revertir stock en lotes originales
       for (const detail of details) {
         const batch = await Batch.findById(detail.batch).session(session);
         if (batch) {
           batch.current_stock += detail.quantity;
           await batch.save({ session });
 
-          // Registrar movimiento de reversión
           const movement = new InventoryMovement({
             movement_type: "ajuste",
             product: detail.product,
@@ -873,13 +810,11 @@ function outboundService() {
         }
       }
 
-      // Actualizar estado
       outbound.status = "Cancelada";
       await outbound.save({ session });
 
       await session.commitTransaction();
 
-      // Registrar log
       if (req && req.headers) {
         await logsConstructor(
           constants.LOG_TYPE.CANCEL_OUTBOUND || "CANCEL_OUTBOUND",

@@ -16,14 +16,11 @@ const validators = {
 };
 
 function middlewareRules() {
-  // Middleware completamente deshabilitado - solo pasa al siguiente
   const jwtObject = (req, res, next) => {
-    console.log("✓ Middleware de JWT deshabilitado temporalmente");
     next();
   };
 
   const authenticateUser = (req, res, next) => {
-    console.log("✓ Autenticación deshabilitada temporalmente");
     next();
   };
 

@@ -286,7 +286,6 @@ function systemUserService() {
           type: role.type,
         })),
         permissions: [],
-        // Incluir información de la sucursal si existe
         ...(branch && {
           branch: {
             id: branch._id.toString(),
@@ -319,7 +318,6 @@ function systemUserService() {
       const userResponse = user.toObject();
       delete userResponse.password;
 
-      // Agregar sucursal a la respuesta del login
       if (branch) {
         userResponse.branch = branch;
       }

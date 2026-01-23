@@ -1,4 +1,3 @@
-// models/SystemUser.js (sin cambios de branch)
 "use strict";
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;

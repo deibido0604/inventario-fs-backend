@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const schema = new Schema({
-    action: { type: String }, // read | update | delete
+    action: { type: String },
     subject: { type: String },
     type: { type: String },
 });

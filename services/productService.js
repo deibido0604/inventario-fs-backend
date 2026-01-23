@@ -189,7 +189,6 @@ function productService() {
         message: "Producto actualizado exitosamente",
       };
     } catch (e) {
-      console.error("Error en updateProduct:", e);
       if (e.code === 11000) {
         throw buildError(400, "El código del producto ya existe");
       }

@@ -1,4 +1,3 @@
-// routes/batchRoutes.js
 var express = require('express');
 const {
   jwtObject,
@@ -15,7 +14,6 @@ const {
 
 var batchRouter = express.Router();
 
-// Crear lote (solo para cargar stock inicial)
 batchRouter.post(
   '/create',
   [
@@ -25,7 +23,6 @@ batchRouter.post(
   createBatch,
 );
 
-// Verificar stock
 batchRouter.get('/stock', getStock);
 
 module.exports = batchRouter;

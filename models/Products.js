@@ -64,7 +64,6 @@ const options = {
 
 const ProductSchema = new Schema(schema, options);
 
-// Índices
 ProductSchema.index({ code: 1 }, { unique: true });
 ProductSchema.index({ name: 1 });
 ProductSchema.index({ category: 1 });

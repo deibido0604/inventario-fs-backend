@@ -48,7 +48,6 @@ const options = {
 
 const OutboundDetailSchema = new Schema(schema, options);
 
-// Índices
 OutboundDetailSchema.index({ outbound: 1 });
 OutboundDetailSchema.index({ batch: 1 });
 OutboundDetailSchema.index({ product: 1 });

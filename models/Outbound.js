@@ -81,7 +81,6 @@ OutboundSchema.pre('save', async function(next) {
   next();
 });
 
-// Índices
 OutboundSchema.index({ outbound_number: 1 }, { unique: true });
 OutboundSchema.index({ destination_branch: 1, status: 1 });
 OutboundSchema.index({ user: 1, request_date: -1 });

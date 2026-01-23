@@ -66,10 +66,9 @@ const options = {
 
 const BatchSchema = new Schema(schema, options);
 
-// Índices críticos para FIFO y búsquedas
-BatchSchema.index({ product: 1, expiration_date: 1 }); // Para selección FIFO
-BatchSchema.index({ branch: 1, product: 1 }); // Para inventario por sucursal
+BatchSchema.index({ product: 1, expiration_date: 1 });
+BatchSchema.index({ branch: 1, product: 1 });
 BatchSchema.index({ batch_number: 1 }, { unique: true });
-BatchSchema.index({ expiration_date: 1 }); // Para alertas de vencimiento
+BatchSchema.index({ expiration_date: 1 });
 
 module.exports = mongoose.model("Batch", BatchSchema);

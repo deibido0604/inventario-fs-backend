@@ -1,4 +1,3 @@
-// services/batchService.js - Versión SIMPLIFICADA
 "use strict";
 const mongoose = require("mongoose");
 const Batch = require("../models/Batch");
@@ -7,7 +6,6 @@ const Branch = require("../models/Branch");
 const { buildError } = require("../utils/response");
 
 function batchService() {
-  // Crear lote inicial
   async function createBatch(params) {
     try {
       const {
@@ -22,25 +20,21 @@ function batchService() {
         user
       } = params;
 
-      // Validar producto
       const productExists = await Product.findById(product);
       if (!productExists) {
         throw buildError(404, "Producto no encontrado");
       }
 
-      // Validar sucursal
       const branchExists = await Branch.findById(branch);
       if (!branchExists) {
         throw buildError(404, "Sucursal no encontrada");
       }
 
-      // Verificar si ya existe el número de lote
       const existingBatch = await Batch.findOne({ batch_number });
       if (existingBatch) {
         throw buildError(400, "Ya existe un lote con este número");
       }
 
-      // Crear lote
       const batch = new Batch({
         batch_number,
         product,
@@ -72,7 +66,6 @@ function batchService() {
     }
   }
 
-  // Obtener stock por producto y sucursal (para verificación)
   async function getStockByProduct(params) {
     try {
       const { productId, branchId } = params;

@@ -9,13 +9,13 @@ const iniciarServidor = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
     });
   } catch (error) {
 
     if (process.env.NODE_ENV === 'production') {
       app.listen(PORT, () => {
-        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
       });
     } else {
       process.exit(1);

@@ -141,7 +141,6 @@ function branchController() {
   async function getDestinationBranchesForUser(req, res) {
     const responseClass = new Response();
 
-    // Obtener userId del query parameter
     const { userId } = req.query;
 
     if (!userId) {
